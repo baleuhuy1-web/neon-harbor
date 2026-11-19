@@ -38,6 +38,12 @@ function stageCover(game) {
   car.group.position.set(24, 0, 120.2);
   car.heading = Math.PI / 2;
   car.group.rotation.y = car.heading;
+  // Keep the kerb beside the Vireo clear of other parked cars.
+  for (const parked of game.parkedCars) {
+    if (parked !== car && Math.hypot(parked.x - 24, parked.z - 120) < 8) {
+      parked.group.position.x += 30;
+    }
+  }
   game.player.group.position.set(23.2, 0, 123.2);
   game.player.heading = -0.87;
   dressCrowd(game, [
@@ -53,7 +59,7 @@ function stageCover(game) {
  * the camera rides behind the action, so the framing holds at any moment.
  */
 function stageChase(game) {
-  const car = game.spawnVehicle('vireo', 0xd64541, -80, 119.4, Math.PI / 2);
+  const car = game.spawnVehicle('vireo', 0xd64541, -95, 119.4, Math.PI / 2);
   car.stolenOnce = true;
   car.speed = 21.5;
   game.player.enterCar(car);
@@ -63,7 +69,7 @@ function stageChase(game) {
   game.shotCameraLocked = true;
 
   const formation = [
-    { back: 5.5, lane: 112.6 }, { back: 8.0, lane: 119.4 }, { back: 11.0, lane: 112.6 },
+    { back: 6.5, lane: 119.4 }, { back: 10.0, lane: 112.6 }, { back: 13.5, lane: 119.4 },
   ];
   game.shotPolice = formation.map((slot) => {
     const unit = game.spawnVehicle('police', 0xe8ecf0, car.x - slot.back, 0, Math.PI / 2);
@@ -110,8 +116,8 @@ function stageChase(game) {
       v.speed = driven.speed;
       v.update(0.0001, { throttle: 0, steer: 0 });
     }
-    const camPos = new THREE.Vector3(driven.x - fx * 13.5, 5.0, driven.z - fz * 13.5);
-    const look = new THREE.Vector3(driven.x + fx * 10, 0.9, driven.z + fz * 10);
+    const camPos = new THREE.Vector3(driven.x - fx * 15, 5.2, driven.z - fz * 15);
+    const look = new THREE.Vector3(driven.x + fx * 11, 0.9, driven.z + fz * 11);
     game.rig.snapTo(camPos, look);
     game.rig.yaw = driven.heading;
   };

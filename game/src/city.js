@@ -485,9 +485,9 @@ export function buildCity(scene, rng) {
     if (!onPier) addCollider(colliders, crate.position.x, crate.position.z, size / 2, size / 2);
   }
 
-  // Two harbor cranes watching over the docks.
+  // Two harbor cranes watching over the docks, kept clear of the central avenue.
   const craneMat = new THREE.MeshStandardMaterial({ color: 0xd86f2e, roughness: 0.7 });
-  for (const cx of [-52, 52]) {
+  for (const cx of [-88, 88]) {
     const crane = new THREE.Group();
     const legA = new THREE.Mesh(new THREE.BoxGeometry(1.4, 26, 1.4), craneMat);
     legA.position.set(-6, 13, 0);
