@@ -20,6 +20,12 @@ import { buildDossier } from './vendor/makefun-game.ts';
 const here = fileURLToPath(new URL('.', import.meta.url));
 const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
+// This entry hands in NEON HARBOR, the open-world crime game built in game/ for
+// gta6-01: a sunset port city explored on foot and by car, with traffic,
+// pedestrians, a wanted level and police who answer it, and Sal Moreno's jobs.
+const ENTRY_TITLE = 'NEON HARBOR';
+console.log(`handing in ${ENTRY_TITLE}: copying game/ and screenshots/ to ${out}`);
+
 mkdirSync(out, { recursive: true });
 cpSync(join(here, 'game'), join(out, 'game'), { recursive: true });
 mkdirSync(join(out, 'screenshots'), { recursive: true });
