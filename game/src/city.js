@@ -189,6 +189,7 @@ export function isOnRoad(x, z) {
 export function buildCity(scene, rng) {
   const colliders = [];
   const parkedSpots = [];
+  const occluders = [];
 
   // --- Sky: a gradient dome, warm at the horizon, deep blue overhead. ---
   const sky = new THREE.Mesh(
@@ -289,6 +290,7 @@ export function buildCity(scene, rng) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     scene.add(mesh);
+    occluders.push(mesh);
     addCollider(colliders, cx, cz, w / 2, d / 2);
     if (rng.chance(0.5)) {
       const tank = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 2.6, 8), roofMat);
@@ -460,6 +462,7 @@ export function buildCity(scene, rng) {
   pier.castShadow = true;
   pier.receiveShadow = true;
   scene.add(pier);
+  occluders.push(pier);
   addCollider(colliders, -13.5, 156, 0.5, 21);
   addCollider(colliders, 13.5, 156, 0.5, 21);
 
@@ -511,17 +514,19 @@ export function buildCity(scene, rng) {
   warehouse.castShadow = true;
   warehouse.receiveShadow = true;
   scene.add(warehouse);
+  occluders.push(warehouse);
   addCollider(colliders, -88, 132, 17, 8);
 
   // Extra street parking along Harbor Avenue and near the garage.
   for (let x = -130; x <= 130; x += 13) {
     if (Math.abs(x) > 16) parkedSpots.push({ x, z: 122.5, heading: Math.PI / 2 });
   }
-  parkedSpots.push({ x: 100, z: -70, heading: 0 }, { x: 100, z: -98, heading: Math.PI });
+  parkedSpots.push({ x: 110.5, z: -70, heading: 0 }, { x: 110.5, z: -98, heading: Math.PI });
 
   return {
     colliders,
     parkedSpots,
+    occluders,
     water,
     /** Scroll the water texture a little so the harbor shimmers. */
     update(dt) {

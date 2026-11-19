@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEON HARBOR — an open-world crime game in Puerto Solano</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #10131c; font-family: "Segoe UI", Arial, sans-serif; color: #f2ede4; }
+  canvas.webgl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .hidden { display: none !important; }
+
+  /* ---------- HUD ---------- */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  #hud-top-right { position: absolute; top: 16px; right: 20px; text-align: right; }
+  #hud-cash { font-size: 30px; font-weight: 800; color: #7be382; text-shadow: 0 2px 6px rgba(0,0,0,.7); letter-spacing: .5px; }
+  #hud-stars { font-size: 24px; color: #5a6068; letter-spacing: 3px; text-shadow: 0 2px 5px rgba(0,0,0,.8); }
+  #hud-stars.hot { color: #ffc93c; }
+  #objective { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); max-width: 560px; text-align: center;
+    background: rgba(10,14,22,.62); border: 1px solid rgba(255,201,60,.45); border-radius: 10px; padding: 8px 22px 10px; }
+  #objective-title { font-size: 13px; font-weight: 800; letter-spacing: 2.5px; color: #ffc93c; text-transform: uppercase; }
+  #objective-text { font-size: 17px; font-weight: 600; margin-top: 2px; }
+  #objective-extra { font-size: 13px; color: #ffd88a; font-weight: 700; margin-top: 1px; }
+  #minimap { position: absolute; left: 18px; bottom: 18px; border-radius: 50%; box-shadow: 0 4px 18px rgba(0,0,0,.55); }
+  #health-box { position: absolute; left: 210px; bottom: 34px; width: 190px; height: 15px; background: rgba(8,10,14,.65);
+    border: 1px solid rgba(255,255,255,.35); border-radius: 8px; overflow: hidden; }
+  #health-box.low { border-color: #e33d2e; animation: pulse .5s infinite alternate; }
+  #health-fill { height: 100%; width: 100%; background: #57c84c; transition: width .18s; }
+  @keyframes pulse { from { box-shadow: 0 0 0 rgba(227,61,46,0); } to { box-shadow: 0 0 14px rgba(227,61,46,.9); } }
+  #hud-ammo, #hud-speed { position: absolute; right: 22px; bottom: 24px; font-size: 24px; font-weight: 800; letter-spacing: 1px;
+    text-shadow: 0 2px 6px rgba(0,0,0,.8); display: none; }
+  #hud-speed { font-size: 30px; color: #ffd88a; }
+  #prompt { position: absolute; left: 50%; bottom: 110px; transform: translateX(-50%); font-size: 19px; font-weight: 700;
+    background: rgba(10,14,22,.7); padding: 7px 18px; border-radius: 8px; border: 1px solid rgba(255,255,255,.25); display: none; }
+  #prompt b { color: #ffc93c; }
+  #crosshair { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%;
+    background: rgba(255,255,255,.9); box-shadow: 0 0 5px rgba(0,0,0,.9); display: none; }
+  #bust-box { position: absolute; left: 50%; top: 56%; transform: translateX(-50%); width: 240px; display: none; text-align: center; }
+  #bust-box .label { font-weight: 800; letter-spacing: 3px; color: #7ab8ff; text-shadow: 0 2px 6px #000; margin-bottom: 5px; }
+  #bust-track { height: 10px; background: rgba(8,10,14,.7); border: 1px solid rgba(255,255,255,.4); border-radius: 6px; overflow: hidden; }
+  #bust-fill { height: 100%; width: 0; background: #3a7bff; }
+  #toast { position: absolute; top: 118px; left: 50%; transform: translateX(-50%) translateY(-8px); text-align: center; max-width: 640px;
+    background: rgba(10,14,22,.78); border-left: 4px solid #ffc93c; border-right: 4px solid #ffc93c; border-radius: 8px;
+    padding: 10px 26px 12px; opacity: 0; transition: opacity .3s, transform .3s; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast-title { font-size: 21px; font-weight: 800; color: #ffd88a; }
+  #toast-sub { font-size: 15px; margin-top: 3px; color: #e8e2d4; }
+  #vignette { position: fixed; inset: 0; pointer-events: none; z-index: 6; opacity: 0;
+    background: radial-gradient(ellipse at center, transparent 52%, rgba(200,20,10,.55) 100%); }
+
+  /* ---------- Screens ---------- */
+  .screen { position: fixed; inset: 0; z-index: 10; display: none; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; background: linear-gradient(180deg, rgba(16,10,26,.42) 0%, rgba(16,10,26,.66) 78%); padding: 24px; }
+  #title-screen h1 { font-size: 92px; margin: 0; font-weight: 900; font-style: italic; letter-spacing: 2px; line-height: .95;
+    background: linear-gradient(180deg, #ffe9a8 12%, #ff9a56 52%, #ff4e7a 88%); -webkit-background-clip: text; background-clip: text; color: transparent;
+    text-shadow: 0 6px 34px rgba(255,110,80,.25); }
+  #title-screen .city { font-size: 21px; letter-spacing: 9px; color: #aee7ff; font-weight: 700; margin-top: 6px; text-transform: uppercase; }
+  #title-screen .blurb { max-width: 620px; font-size: 17px; line-height: 1.5; color: #f0e9da; margin: 20px 0 6px; text-shadow: 0 2px 8px #000; }
+  .controls { display: grid; grid-template-columns: auto auto; gap: 3px 16px; font-size: 14.5px; margin: 14px 0 20px; text-align: left;
+    background: rgba(8,10,16,.55); padding: 12px 20px; border-radius: 10px; }
+  .controls b { color: #ffc93c; text-align: right; font-weight: 800; }
+  .btn { pointer-events: auto; cursor: pointer; border: 2px solid #ffc93c; color: #14100a; background: linear-gradient(180deg, #ffd88a, #ffab4a);
+    font-size: 20px; font-weight: 900; letter-spacing: 1.5px; padding: 12px 38px; border-radius: 10px; margin: 5px; text-transform: uppercase; }
+  .btn:hover { filter: brightness(1.1); }
+  .btn.ghost { background: transparent; color: #ffd88a; }
+  .fineprint { font-size: 12.5px; color: rgba(240,233,218,.65); margin-top: 14px; }
+  #pause-screen h1, #over-screen h1 { font-size: 64px; margin: 0 0 8px; font-weight: 900; letter-spacing: 6px; }
+  .over-busted { color: #7ab8ff; text-shadow: 0 4px 26px rgba(58,123,255,.6); }
+  .over-wasted { color: #ff5147; text-shadow: 0 4px 26px rgba(255,40,30,.6); }
+  #over-line { font-size: 18px; margin-bottom: 20px; color: #f0e9da; }
+</style>
+</head>
+<body>
+<div id="hud">
+  <div id="objective" style="display:none">
+    <div id="objective-title"></div>
+    <div id="objective-text"></div>
+    <div id="objective-extra"></div>
+  </div>
+  <div id="hud-top-right">
+    <div id="hud-cash">$0</div>
+    <div id="hud-stars">☆☆☆☆☆</div>
+  </div>
+  <canvas id="minimap" width="176" height="176"></canvas>
+  <div id="health-box"><div id="health-fill"></div></div>
+  <div id="hud-ammo"></div>
+  <div id="hud-speed"></div>
+  <div id="prompt"></div>
+  <div id="crosshair"></div>
+  <div id="bust-box"><div class="label">BUSTED</div><div id="bust-track"><div id="bust-fill"></div></div></div>
+  <div id="toast"><div id="toast-title"></div><div id="toast-sub"></div></div>
+</div>
+<div id="vignette"></div>
+
+<section id="title-screen" class="screen">
+  <h1>NEON HARBOR</h1>
+  <div class="city">Puerto Solano</div>
+  <p class="blurb">Marco Reyes came home to Puerto Solano with empty pockets and a talent for driving.
+    Fixer Sal Moreno has work — gold cars, hot packages and one long sunset to earn it in.
+    Steal wheels, run jobs, and stay one avenue ahead of the harbor police.</p>
+  <div class="controls">
+    <b>W A S D</b><span>Walk / drive</span>
+    <b>Mouse</b><span>Look (click the game to grab the mouse)</span>
+    <b>E</b><span>Enter / exit a car</span>
+    <b>Shift</b><span>Sprint on foot</span>
+    <b>Left click</b><span>Shoot (on foot)</span>
+    <b>R</b><span>Reload</span>
+    <b>Space</b><span>Handbrake</span>
+    <b>Esc / P</b><span>Pause</span>
+    <b>M</b><span>Mute</span>
+  </div>
+  <div>
+    <button id="btn-continue" class="btn" style="display:none">Continue</button>
+    <button id="btn-play" class="btn">New Game</button>
+  </div>
+  <div class="fineprint">Progress saves automatically in this browser. Every sound is synthesized live — no audio files.</div>
+</section>
+
+<section id="pause-screen" class="screen">
+  <h1>PAUSED</h1>
+  <p id="over-line" style="display:none"></p>
+  <div>
+    <button id="btn-resume" class="btn">Resume</button>
+    <button id="btn-restart" class="btn ghost">Restart story</button>
+  </div>
+  <div class="fineprint">Your cash and Sal's jobs are saved. The sunset waits for no one else.</div>
+</section>
+
+<section id="over-screen" class="screen">
+  <h1 id="over-title">WASTED</h1>
+  <p id="over-line-flavor"></p>
+  <div>
+    <button id="btn-respawn" class="btn">Get back up</button>
+  </div>
+</section>
+
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

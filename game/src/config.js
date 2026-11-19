@@ -43,8 +43,8 @@ export const CITY_NAME = 'Puerto Solano';
 
 /** Where Marco starts: Harbor Avenue, facing the skyline. */
 export const PLAYER_START = { x: -8, z: 112, heading: Math.PI };
-/** The garage every delivery ends at, on the east side. */
-export const GARAGE_POS = { x: 108, z: -84 };
+/** The garage every delivery ends at: the corner of the east avenue. */
+export const GARAGE_POS = { x: 111, z: -58 };
 /** The pier pickup point, south over the water. */
 export const PIER_POS = { x: 0, z: 158 };
 /** Respawn points after a bust or a wreck. */
