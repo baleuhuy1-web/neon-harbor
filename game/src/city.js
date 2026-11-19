@@ -468,16 +468,16 @@ export function buildCity(scene, rng) {
 
   const crateColors = [0xc2543a, 0x3a7ac2, 0x4aa85e, 0xc2a03a];
   for (let i = 0; i < 14; i += 1) {
-    const size = rng.range(2, 3.4);
+    const size = rng.range(1.8, 3);
     const crate = new THREE.Mesh(
       new THREE.BoxGeometry(size, size, size),
       new THREE.MeshStandardMaterial({ color: rng.pick(crateColors), roughness: 0.85 }),
     );
     const onPier = i < 6;
     crate.position.set(
-      onPier ? rng.pick([-9, 9]) : rng.range(-120, 120),
+      onPier ? rng.pick([-9, 9]) : rng.pick([-1, 1]) * rng.range(34, 120),
       size / 2 + (onPier ? 0.7 : 0),
-      onPier ? rng.range(142, 168) : rng.range(124, 132),
+      onPier ? rng.range(142, 168) : rng.range(126, 133),
     );
     crate.rotation.y = rng.range(0, Math.PI);
     crate.castShadow = true;

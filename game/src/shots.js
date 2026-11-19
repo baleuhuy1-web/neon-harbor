@@ -43,7 +43,7 @@ function stageCover(game) {
   dressCrowd(game, [
     { x: 12, z: 124.5 }, { x: 34, z: 124.5 }, { x: 38, z: 113 }, { x: 6, z: 112 },
   ]);
-  poseCamera(game, new THREE.Vector3(14.5, 2.4, 130.5), new THREE.Vector3(24, 1.2, 120));
+  poseCamera(game, new THREE.Vector3(17.5, 2.0, 128.5), new THREE.Vector3(23.8, 1.1, 120.5));
 }
 
 /**
@@ -63,7 +63,7 @@ function stageChase(game) {
   game.shotCameraLocked = true;
 
   const formation = [
-    { back: 6.2, lane: 112.6 }, { back: 8.6, lane: 119.4 }, { back: 12.5, lane: 112.6 },
+    { back: 5.5, lane: 112.6 }, { back: 8.0, lane: 119.4 }, { back: 11.0, lane: 112.6 },
   ];
   game.shotPolice = formation.map((slot) => {
     const unit = game.spawnVehicle('police', 0xe8ecf0, car.x - slot.back, 0, Math.PI / 2);
@@ -79,8 +79,9 @@ function stageChase(game) {
   }
   game.shotObjective = { title: 'Hot Package', text: 'Lose the police', extra: '' };
   game.shotControl = (dt, driven) => {
-    const offLane = clamp((119.4 - driven.z) * 0.05, -0.6, 0.6);
-    const desired = Math.PI / 2 + offLane;
+    // Heading PI/2 is east; drifting south of the lane (z too big) needs a
+    // larger heading (toward north), drifting north needs a smaller one.
+    const desired = Math.PI / 2 + clamp((driven.z - 119.4) * 0.05, -0.6, 0.6);
     return {
       throttle: 0.9,
       steer: clamp(angleDelta(driven.heading, desired) * 2.6, -1, 1),
@@ -93,19 +94,24 @@ function stageChase(game) {
     if (!driven) return;
     const fx = Math.sin(driven.heading);
     const fz = Math.cos(driven.heading);
+    const rx = -fz;
+    const rz = fx;
     for (const slot of game.shotPolice) {
       const v = slot.vehicle;
-      const sway = Math.sin(t * 1.3 + slot.back) * 0.35;
-      v.group.position.set(driven.x - fx * slot.back, 0, driven.z - fz * slot.back + sway);
-      // Hold the formation lane rather than the sway when crossing intersections.
-      v.group.position.z = slot.lane + sway;
-      v.heading = Math.PI / 2;
+      const sway = Math.sin(t * 1.3 + slot.back) * 0.3;
+      const laneDelta = slot.lane - 119.4 + sway;
+      v.group.position.set(
+        driven.x - fx * slot.back + rx * laneDelta,
+        0,
+        driven.z - fz * slot.back + rz * laneDelta,
+      );
+      v.heading = driven.heading;
       v.group.rotation.y = v.heading;
       v.speed = driven.speed;
       v.update(0.0001, { throttle: 0, steer: 0 });
     }
-    const camPos = new THREE.Vector3(driven.x - fx * 12.5, 4.6, driven.z - fz * 12.5);
-    const look = new THREE.Vector3(driven.x + fx * 9, 0.9, driven.z + fz * 9);
+    const camPos = new THREE.Vector3(driven.x - fx * 13.5, 5.0, driven.z - fz * 13.5);
+    const look = new THREE.Vector3(driven.x + fx * 10, 0.9, driven.z + fz * 10);
     game.rig.snapTo(camPos, look);
     game.rig.yaw = driven.heading;
   };
