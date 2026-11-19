@@ -80,18 +80,18 @@ export class MissionManager {
     // The beacon: a pillar of gold light with a ring and a bobbing diamond.
     this.beacon = new THREE.Group();
     const pillar = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.7, 1.7, 34, 12, 1, true),
-      new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }),
+      new THREE.CylinderGeometry(1.15, 1.15, 34, 12, 1, true),
+      new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }),
     );
     pillar.position.y = 17;
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(2.4, 3.1, 28),
-      new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }),
+      new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0.55, side: THREE.DoubleSide, depthWrite: false }),
     );
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = 0.25;
     this.diamond = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.85),
+      new THREE.OctahedronGeometry(0.62),
       new THREE.MeshBasicMaterial({ color: 0xffd76a }),
     );
     this.diamond.position.y = 4.4;

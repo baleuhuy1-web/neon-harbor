@@ -92,6 +92,8 @@ class Game {
     this.shotControl = null;
     this.shotObjective = null;
     this.onShotFrame = null;
+    this.shotPolice = null;
+    this.suppressPoliceAI = false;
 
     Input.init(this.renderer.domElement);
     this.bindUi();
@@ -418,22 +420,24 @@ class Game {
     // --- The city lives around him. ---
     this.traffic.update(dt, this.obstacleList(), focus);
     this.crowd.update(dt, this.colliders, focus);
-    this.resolveVehicleContacts(dt, now);
+    if (this.state !== 'shot') this.resolveVehicleContacts(dt, now);
     this.checkPedestrianHits(now);
 
-    this.police.update(dt, {
-      playerPos: focus,
-      playerSpeed,
-      playerVelX: player.inCar ? Math.sin(player.car.heading) * player.car.speed : 0,
-      playerVelZ: player.inCar ? Math.cos(player.car.heading) * player.car.speed : 0,
-      stars: this.wanted.stars,
-      colliders: this.colliders,
-      onCrash: (intensity) => this.audio.crash(intensity * 0.7),
-    });
+    if (!this.suppressPoliceAI) {
+      this.police.update(dt, {
+        playerPos: focus,
+        playerSpeed,
+        playerVelX: player.inCar ? Math.sin(player.car.heading) * player.car.speed : 0,
+        playerVelZ: player.inCar ? Math.cos(player.car.heading) * player.car.speed : 0,
+        stars: this.wanted.stars,
+        colliders: this.colliders,
+        onCrash: (intensity) => this.audio.crash(intensity * 0.7),
+      });
+    }
 
     // --- Wanted level, bust and health. ---
     const seen = this.police.playerSeen(focus) || now - this.wanted.lastGunfireReport < 2;
-    this.wanted.update(dt, seen);
+    if (!this.suppressPoliceAI) this.wanted.update(dt, seen);
     if (this.wanted.stars > 0) {
       const pinned = this.police.nearestDistance(focus) < 7.5 && Math.abs(playerSpeed) < 2.4;
       this.bustProgress = clamp(this.bustProgress + (pinned ? dt / 2.6 : -dt * 0.6), 0, 1);
@@ -455,9 +459,13 @@ class Game {
     // --- Missions, camera, sound, HUD. ---
     this.missions.update(dt, { playerPos: focus, playerCar: player.car, stars: this.wanted.stars });
     if (this.onShotFrame) this.onShotFrame(this.time, dt);
-    if (player.inCar) this.rig.updateCar(dt, player.car);
-    else if (this.state !== 'shot' || !this.shotCameraLocked) this.rig.updateFoot(dt, player.group.position);
-    if (this.state === 'shot' && this.shotCameraLocked) { /* posed camera set by shots.js */ }
+    if (this.shotCameraLocked) {
+      // Posed camera: shots.js placed it (and may keep placing it per frame).
+    } else if (player.inCar) {
+      this.rig.updateCar(dt, player.car);
+    } else {
+      this.rig.updateFoot(dt, player.group.position);
+    }
 
     const speedRatio = player.inCar ? Math.abs(player.car.speed) / player.car.spec.topSpeed : 0;
     this.audio.updateEngine(speedRatio, player.inCar && this.state === 'playing');
@@ -584,7 +592,7 @@ class Game {
       cameraYaw: this.rig.yaw,
       traffic: this.traffic.cars.map((c) => c.vehicle),
       parked: this.parkedCars,
-      police: this.police.units.map((u) => u.vehicle),
+      police: [...this.police.units.map((u) => u.vehicle), ...(this.shotPolice || [])],
       peds: this.crowd.peds,
       marker: this.missions.currentMarker(),
     }, this.time);

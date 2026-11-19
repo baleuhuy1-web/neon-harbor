@@ -32,52 +32,82 @@ function poseCamera(game, position, look) {
   };
 }
 
-/** cover: Marco beside Sal's gold Vireo on Harbor Avenue, skyline behind him. */
+/** cover: Marco beside Sal's gold Vireo, the skyline of Puerto Solano behind him. */
 function stageCover(game) {
   const car = game.storyCars.get(0);
   car.group.position.set(24, 0, 120.2);
   car.heading = Math.PI / 2;
   car.group.rotation.y = car.heading;
-  game.player.group.position.set(21.4, 0, 117.2);
-  game.player.heading = -2.35;
+  game.player.group.position.set(23.2, 0, 123.2);
+  game.player.heading = -0.87;
   dressCrowd(game, [
-    { x: 13, z: 124.5 }, { x: 33, z: 124.5 }, { x: 40, z: 110 }, { x: 8, z: 109 },
+    { x: 12, z: 124.5 }, { x: 34, z: 124.5 }, { x: 38, z: 113 }, { x: 6, z: 112 },
   ]);
-  poseCamera(game, new THREE.Vector3(15.2, 2.2, 109.8), new THREE.Vector3(24.5, 1.1, 119.6));
+  poseCamera(game, new THREE.Vector3(14.5, 2.4, 130.5), new THREE.Vector3(24, 1.2, 120));
 }
 
-/** chase: flat out down Harbor Avenue, three interceptors on his tail, four stars. */
+/**
+ * chase: flat out down Harbor Avenue with three interceptors in formation on
+ * his tail and four stars lit. The police cars are real interceptors driven
+ * by a formation script (the manager's AI is suppressed for the pose) and
+ * the camera rides behind the action, so the framing holds at any moment.
+ */
 function stageChase(game) {
-  const car = game.spawnVehicle('vireo', 0xd64541, -64, 119.4, Math.PI / 2);
+  const car = game.spawnVehicle('vireo', 0xd64541, -80, 119.4, Math.PI / 2);
   car.stolenOnce = true;
-  car.speed = 26;
+  car.speed = 21.5;
   game.player.enterCar(car);
   game.rig.yaw = Math.PI / 2;
   game.wanted.forceStars(4);
-  const lanes = [
-    { x: -75, z: 119.4, speed: 28 }, { x: -83, z: 112.6, speed: 29 }, { x: -92, z: 119.4, speed: 27 },
+  game.suppressPoliceAI = true;
+  game.shotCameraLocked = true;
+
+  const formation = [
+    { back: 6.2, lane: 112.6 }, { back: 8.6, lane: 119.4 }, { back: 12.5, lane: 112.6 },
   ];
-  for (const lane of lanes) {
-    const unit = game.police.spawnUnit({ x: lane.x, z: lane.z });
-    unit.group.position.set(lane.x, 0, lane.z);
-    unit.heading = Math.PI / 2;
-    unit.speed = lane.speed;
-  }
-  // Clear the avenue ahead so the chase runs clean through the frame.
+  game.shotPolice = formation.map((slot) => {
+    const unit = game.spawnVehicle('police', 0xe8ecf0, car.x - slot.back, 0, Math.PI / 2);
+    unit.group.position.z = slot.lane;
+    unit.speed = 21.5;
+    return { vehicle: unit, back: slot.back, lane: slot.lane };
+  });
+  // Clear Harbor Avenue so the chase runs clean through the frame.
   for (const trafficCar of game.traffic.cars) {
-    if (trafficCar.vehicle.z > 104 && trafficCar.vehicle.x > -120) {
+    if (Math.abs(trafficCar.vehicle.z - 116) < 9) {
       trafficCar.placeRandom(game.rng, { x: -116, z: -116 });
     }
   }
   game.shotObjective = { title: 'Hot Package', text: 'Lose the police', extra: '' };
   game.shotControl = (dt, driven) => {
-    const desired = Math.PI / 2 + clamp((119.4 - driven.z) * 0.04, -0.35, 0.35);
+    const offLane = clamp((119.4 - driven.z) * 0.05, -0.6, 0.6);
+    const desired = Math.PI / 2 + offLane;
     return {
-      throttle: 0.92,
-      steer: clamp(angleDelta(driven.heading, desired) * 2.4, -1, 1),
+      throttle: 0.9,
+      steer: clamp(angleDelta(driven.heading, desired) * 2.6, -1, 1),
       brake: false,
       handbrake: false,
     };
+  };
+  game.onShotFrame = (t) => {
+    const driven = game.player.car;
+    if (!driven) return;
+    const fx = Math.sin(driven.heading);
+    const fz = Math.cos(driven.heading);
+    for (const slot of game.shotPolice) {
+      const v = slot.vehicle;
+      const sway = Math.sin(t * 1.3 + slot.back) * 0.35;
+      v.group.position.set(driven.x - fx * slot.back, 0, driven.z - fz * slot.back + sway);
+      // Hold the formation lane rather than the sway when crossing intersections.
+      v.group.position.z = slot.lane + sway;
+      v.heading = Math.PI / 2;
+      v.group.rotation.y = v.heading;
+      v.speed = driven.speed;
+      v.update(0.0001, { throttle: 0, steer: 0 });
+    }
+    const camPos = new THREE.Vector3(driven.x - fx * 12.5, 4.6, driven.z - fz * 12.5);
+    const look = new THREE.Vector3(driven.x + fx * 9, 0.9, driven.z + fz * 9);
+    game.rig.snapTo(camPos, look);
+    game.rig.yaw = driven.heading;
   };
 }
 
@@ -88,7 +118,7 @@ function stageFoot(game) {
   dressCrowd(game, [
     { x: 23, z: 114 }, { x: 31.5, z: 117 }, { x: 18, z: 108.5 }, { x: 35, z: 124 },
   ]);
-  poseCamera(game, new THREE.Vector3(30.6, 2.5, 105.2), new THREE.Vector3(23.5, 1.2, 116.5));
+  poseCamera(game, new THREE.Vector3(31.5, 3.0, 103.5), new THREE.Vector3(23, 1.2, 116.5));
 }
 
 /** menu: the title screen over the orbiting harbour camera (the frame loop does the rest). */
@@ -103,6 +133,8 @@ const STAGES = { cover: stageCover, chase: stageChase, foot: stageFoot, menu: st
 
 /** Stage the named scene on a freshly built game. Unknown names get the cover. */
 export function stageShot(game, name) {
+  // No intro toast in a posed frame: the objective banner tells the story.
+  game.missions.announced = true;
   const stage = STAGES[name] || stageCover;
   stage(game);
 }
